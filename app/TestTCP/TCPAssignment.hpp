@@ -28,6 +28,9 @@ private:
 
 private:
 	virtual void timerCallback(void* payload) final;
+/* custom declare */
+	void syscall_socket(UUID syscall, int pid, int param1, int param2);
+	void syscall_close(UUID syscall, int pid, int param1);
 
 public:
 	TCPAssignment(Host* host);
