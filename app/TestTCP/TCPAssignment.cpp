@@ -70,9 +70,9 @@ void TCPAssignment::systemCallback(UUID syscallUUID, int pid, const SystemCallPa
 		//		static_cast<socklen_t*>(param.param3_ptr));
 		break;
 	case BIND:
-		//this->syscall_bind(syscallUUID, pid, param.param1_int,
-		//		static_cast<struct sockaddr *>(param.param2_ptr),
-		//		(socklen_t) param.param3_int);
+		this->syscall_bind(syscallUUID, pid, param.param1_int,
+				static_cast<struct sockaddr *>(param.param2_ptr),
+				(socklen_t) param.param3_int);
 		break;
 	case GETSOCKNAME:
 		//this->syscall_getsockname(syscallUUID, pid, param.param1_int,
@@ -96,9 +96,59 @@ void TCPAssignment::syscall_socket(UUID syscallUUID,int pid, int param1, int par
 }
 void TCPAssignment::syscall_close(UUID syscallUUID, int pid, int param1)
 {
+        std::list<struct b_sock>::iterator it;
+        it = this->find_b_sock_by(param1);
+        if (it!=this->b_sock_map.end())
+            this->b_sock_map.erase(it);
 	this->removeFileDescriptor(pid,param1);
 	this->returnSystemCall(syscallUUID,0);
-	return ;
+}
+void TCPAssignment::syscall_bind(UUID syscallUUID, int pid, int param1_int, sockaddr * param2_ptr, socklen_t param3_int)
+{
+        b_sock new_sock;
+
+        struct sockaddr_in* sock_info = (sockaddr_in *)param2_ptr;
+        new_sock.fd = param1_int;
+        new_sock.addr = ntohl(sock_info->sin_addr.s_addr);
+        new_sock.port = ntohs(sock_info->sin_port);
+
+
+        if (this->is_overlap(new_sock)){
+            this->returnSystemCall(syscallUUID,1);
+        } else {
+            this->b_sock_map.push_back(new_sock);
+            this->returnSystemCall(syscallUUID,0);
+        }
+        
+
+}
+
+bool TCPAssignment::is_overlap(b_sock new_sock)
+{
+    std::list<struct b_sock> b_sock_map = this->b_sock_map;
+    std::list<struct b_sock>::iterator it ;
+
+    for(it=b_sock_map.begin(); it != b_sock_map.end(); ++it){
+        bool check_fd = ((*it).fd == new_sock.fd);
+        bool check_sp_ip = ((*it).addr == 0 || new_sock.addr == 0);
+        bool check_ip_port = ((check_sp_ip || ((*it).addr == new_sock.addr)) && (*it).port == new_sock.port);
+        if(check_fd || check_ip_port)
+            return true;
+    }
+    return false;
+}
+
+std::list<struct b_sock>::iterator TCPAssignment::find_b_sock_by(int fd)
+{
+    std::list<struct b_sock> b_sock_map = this->b_sock_map;
+    std::list<struct b_sock>::iterator it ;
+
+    for(it=this->b_sock_map.begin(); it != this->b_sock_map.end(); ++it){
+        if ((*it).fd==fd){
+            return it;
+        }
+    }
+    return this->b_sock_map.end();
 }
 
 void TCPAssignment::packetArrived(std::string fromModule, Packet* packet)
@@ -110,6 +160,5 @@ void TCPAssignment::timerCallback(void* payload)
 {
 
 }
-
 
 }
