@@ -46,10 +46,10 @@ void TCPAssignment::systemCallback(UUID syscallUUID, int pid, const SystemCallPa
 	switch(param.syscallNumber)
 	{
 	case SOCKET:
-		//this->syscall_socket(syscallUUID, pid, param.param1_int, param.param2_int);
+		this->syscall_socket(syscallUUID, pid, param.param1_int, param.param2_int);
 		break;
 	case CLOSE:
-		//this->syscall_close(syscallUUID, pid, param.param1_int);
+		this->syscall_close(syscallUUID, pid, param.param1_int);
 		break;
 	case READ:
 		//this->syscall_read(syscallUUID, pid, param.param1_int, param.param2_ptr, param.param3_int);
@@ -87,6 +87,18 @@ void TCPAssignment::systemCallback(UUID syscallUUID, int pid, const SystemCallPa
 	default:
 		assert(0);
 	}
+}
+void TCPAssignment::syscall_socket(UUID syscallUUID,int pid, int param1, int param2)
+{
+	int sock_fd;
+	sock_fd=this->createFileDescriptor(pid);
+	this->returnSystemCall(syscallUUID,sock_fd);
+}
+void TCPAssignment::syscall_close(UUID syscallUUID, int pid, int param1)
+{
+	this->removeFileDescriptor(pid,param1);
+	this->returnSystemCall(syscallUUID,0);
+	return ;
 }
 
 void TCPAssignment::packetArrived(std::string fromModule, Packet* packet)
