@@ -41,6 +41,7 @@ private:
         void syscall_bind(UUID syscallUUID, int pid, int param1_int, struct sockaddr * param2_ptr, socklen_t param3_int);
         bool is_overlap(b_sock new_sock);
         std::list<struct b_sock>::iterator find_b_sock_by(int fd);
+        void syscall_getsockname(UUID syscallUUID, int pid, int fd, struct sockaddr * sock_addr, socklen_t* sock_len);
 
 public:
 	TCPAssignment(Host* host);
