@@ -75,9 +75,9 @@ void TCPAssignment::systemCallback(UUID syscallUUID, int pid, const SystemCallPa
 				(socklen_t) param.param3_int);
 		break;
 	case GETSOCKNAME:
-		//this->syscall_getsockname(syscallUUID, pid, param.param1_int,
-		//		static_cast<struct sockaddr *>(param.param2_ptr),
-		//		static_cast<socklen_t*>(param.param3_ptr));
+		this->syscall_getsockname(syscallUUID, pid, param.param1_int,
+				static_cast<struct sockaddr *>(param.param2_ptr),
+				static_cast<socklen_t*>(param.param3_ptr));
 		break;
 	case GETPEERNAME:
 		//this->syscall_getpeername(syscallUUID, pid, param.param1_int,
@@ -109,8 +109,8 @@ void TCPAssignment::syscall_bind(UUID syscallUUID, int pid, int param1_int, sock
 
         struct sockaddr_in* sock_info = (sockaddr_in *)param2_ptr;
         new_sock.fd = param1_int;
-        new_sock.addr = ntohl(sock_info->sin_addr.s_addr);
-        new_sock.port = ntohs(sock_info->sin_port);
+        new_sock.addr = sock_info->sin_addr.s_addr;
+        new_sock.port = sock_info->sin_port;
 
 
         if (this->is_overlap(new_sock)){
@@ -149,6 +149,16 @@ std::list<struct b_sock>::iterator TCPAssignment::find_b_sock_by(int fd)
         }
     }
     return this->b_sock_map.end();
+}
+
+void TCPAssignment::syscall_getsockname(UUID syscallUUID, int pid, int fd, struct sockaddr * sock_addr, socklen_t* sock_len)
+{
+    std::list<struct b_sock>::iterator it = this->find_b_sock_by(fd);
+    
+    ((struct sockaddr_in*)sock_addr)->sin_family = AF_INET;
+    ((struct sockaddr_in*)sock_addr)->sin_addr.s_addr = (*it).addr;
+    ((struct sockaddr_in*)sock_addr)->sin_port = (*it).port;
+    this->returnSystemCall(syscallUUID, 0);
 }
 
 void TCPAssignment::packetArrived(std::string fromModule, Packet* packet)
